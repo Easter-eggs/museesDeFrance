@@ -317,6 +317,39 @@ class RecolementController extends ActionController
 		$this->render('recolement_list_grouped_html.php');
 	}
 
+	public function Localisation()
+	{
+		$this->render('localisation_html.php');	
+	}
+
+	public function Localisation2()
+	{
+		if (isset($_POST["idno"])) {
+			$ps_object_idno = $_POST["idno"];
+			$t_object = new ca_objects();
+			//$vo_object->load(array("idno"=>$ps_object_idno));
+			$t_object->load(array('idno' => $$ps_object_idno));
+			var_dump($ps_object_idno);
+			if ($t_object->numErrors()) {
+				var_dump($t_object->getErrors());
+				die();
+			}
+			$vs_label = $t_object->get('ca_objects.preferred_labels');
+			$vs_idno = $t_object->get('ca_objects.idno');
+			var_dump($vs_idno);
+			var_dump($vs_label);die();
+		}
+		$this->view->setVar('object_idno', $ps_object_idno);
+		$vs_label = $t_object->get('ca_objects.preferred_labels.name');
+		$this->render('localisation2_html.php');	
+
+	}
+
+	public function LocalisationResultat()
+	{
+		$this->render('localisation_resultats_html.php');	
+	}
+
 	# -------------------------------------------------------
 	public function TableauSuivi()
 	{

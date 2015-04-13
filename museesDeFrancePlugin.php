@@ -169,6 +169,15 @@ class museesDeFrancePlugin extends BaseApplicationPlugin
                 );
             }
 
+			$va_menu_items['localisation'] = array(
+				'displayName' => _t('Régie : localisation'),
+				"default" => array(
+					'module' => 'museesDeFrance',
+					'controller' => 'Recolement',
+					'action' => 'Localisation'
+				)
+			);
+
 			$pa_menu_bar['recolementsmf_menu'] = array(
 				'displayName' => _t("Procédures<br/>réglementaires"),
 				'navigation' => $va_menu_items
