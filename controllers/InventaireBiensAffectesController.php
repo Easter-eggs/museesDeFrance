@@ -13,11 +13,10 @@ class InventaireBiensAffectesController extends ActionController
     public function __construct(&$po_request, &$po_response, $pa_view_paths = null)
     {
         parent::__construct($po_request, $po_response, $pa_view_paths);
-        $this->vt_registre = new RegistreBiensAffectes();
-        if (!$this->vt_registre->db_installed()) {
+        //$this->vt_registre = new RegistreBiensAffectes();
+        /*if (!$this->vt_registre->db_installed()) {
             $this->response->setRedirect(__CA_URL_ROOT__."/index.php/museesDeFrance/InstallProfileThesaurus/Database");
-        }
-
+        }*/
         // Global vars for all children views
         //$this->view->setVar('plugin_dir', __CA_BASE_DIR__."/app/plugins/museesDeFrance");
         //$this->view->setVar('plugin_url', __CA_URL_ROOT__."/app/plugins/museesDeFrance");
@@ -263,7 +262,8 @@ class InventaireBiensAffectesController extends ActionController
     # -------------------------------------------------------
     public function Info($pa_parameters)
     {
-        //return $this->render('widget_inventaire_info_html.php', true);
+        $this->view->setVar("plugin_url",__CA_URL_ROOT__."/app/plugins/museesDeFrance");
+        return $this->render('widget_inventaire_info_html.php', true);
     }
 
 }
