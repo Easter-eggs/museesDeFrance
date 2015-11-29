@@ -1,28 +1,3 @@
-# ************************************************************
-# Sequel Pro SQL dump
-# Version 4096
-#
-# http://www.sequelpro.com/
-# http://code.google.com/p/sequel-pro/
-#
-# Hôte: 127.0.0.1 (MySQL 5.6.24)
-# Base de données: inventaire_annonay
-# Temps de génération: 2015-08-13 05:58:51 +0000
-# ************************************************************
-
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
-
-# Affichage de la table inventaire_depot
-# ------------------------------------------------------------
-
 CREATE TABLE `inventaire_depot` (
   `id` int(20) NOT NULL AUTO_INCREMENT,
   `ca_id` int(20) DEFAULT NULL,
@@ -52,12 +27,7 @@ CREATE TABLE `inventaire_depot` (
   `validated` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `numdep` (`numdep`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
-# Affichage de la table inventaire_depot_photo
-# ------------------------------------------------------------
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE `inventaire_depot_photo` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -66,12 +36,7 @@ CREATE TABLE `inventaire_depot_photo` (
   `file` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `inventaire_id` (`record_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
-# Affichage de la table inventaire_inventaire
-# ------------------------------------------------------------
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE `inventaire_inventaire` (
   `id` int(20) NOT NULL AUTO_INCREMENT,
@@ -102,12 +67,7 @@ CREATE TABLE `inventaire_inventaire` (
   `validated` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `numinv` (`numinv`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
-# Affichage de la table inventaire_inventaire_photo
-# ------------------------------------------------------------
+) DEFAULT CHARSET=utf8;
 
 CREATE TABLE `inventaire_inventaire_photo` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -116,14 +76,5 @@ CREATE TABLE `inventaire_inventaire_photo` (
   `file` text NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `inventaire_id` (`record_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) DEFAULT CHARSET=utf8;
 
-
-
-
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

@@ -53,7 +53,34 @@ class BaseRegistre implements InterfaceRegistre {
             "database" =>	$this->opo_config->get("db_database"),
             "type" =>		"mysql"
         ));
+    }
 
+    function db_installed() {
+        $qr_res = $this->opo_db->query("SHOW TABLES LIKE '".$this->tablename."'");
+        if ($qr_res->numRows() > 0) {
+            $qr_res->nextRow();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function do_install() {
+        $vs_structure_file = __CA_BASE_DIR__."/app/plugins/museesDeFrance/assets/sql/_db_structure.sql";
+        $vs_schema = file_get_contents($vs_structure_file);
+        //var_dump($vs_schema);
+        $va_schema_statements = explode(';', $vs_schema);
+
+        foreach($va_schema_statements as $vs_statement) {
+            if (!trim($vs_statement)) { continue; }
+
+            $this->opo_db->query($vs_statement);
+            if ($this->opo_db->numErrors()) {
+                $this->addError("Error while loading the database schema: ".join("; ",$this->opo_db->getErrors()));
+                return false;
+            }
+        }
+        return true;
     }
 
     public function count() {

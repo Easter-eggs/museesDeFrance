@@ -6,16 +6,21 @@ require_once(__CA_MODELS_DIR__."/ca_objects.php");
 
 class InventaireBiensAffectesController extends ActionController
 {
+    private $vt_registre;
     # -------------------------------------------------------
     #
     # -------------------------------------------------------
     public function __construct(&$po_request, &$po_response, $pa_view_paths = null)
     {
         parent::__construct($po_request, $po_response, $pa_view_paths);
+        $this->vt_registre = new RegistreBiensAffectes();
+        if (!$this->vt_registre->db_installed()) {
+            $this->response->setRedirect(__CA_URL_ROOT__."/index.php/museesDeFrance/InstallProfileThesaurus/Database");
+        }
 
         // Global vars for all children views
-        $this->view->setVar('plugin_dir', __CA_BASE_DIR__."/app/plugins/museesDeFrance");
-        $this->view->setVar('plugin_url', __CA_URL_ROOT__."/app/plugins/museesDeFrance");
+        //$this->view->setVar('plugin_dir', __CA_BASE_DIR__."/app/plugins/museesDeFrance");
+        //$this->view->setVar('plugin_url', __CA_URL_ROOT__."/app/plugins/museesDeFrance");
     }
 
     public function Index()
@@ -36,19 +41,37 @@ class InventaireBiensAffectesController extends ActionController
         $designation = $this->request->getParameter("designation",pString);
         $this->view->setVar("designation",$designation);
 
-        $vt_registre = new RegistreBiensAffectes();
-        $this->view->setVar("registre",$vt_registre);
+        $this->view->setVar("registre",$this->vt_registre);
+        $this->render('inventaire_biens_affectes_index_html.php');
+    }
 
-        $this->render('inventaire_biens_affectes/inventaire_biens_affectes_index_html.php');
+    public function Index2()
+    {
+        // Check if draft parameter is strictly equal to 0, every other value allows to display drafts
+        $vb_hide_drafts = false;
+        if (($this->request->getParameter("draft",pInteger) === "0") || ($this->request->getParameter("hidedrafts",pString) === "on")) {
+            $vb_hide_drafts = true;
+        }
+        $this->view->setVar("hide_drafts",$vb_hide_drafts);
+
+        $year = $this->request->getParameter("year",pString);
+        $this->view->setVar("year",$year);
+
+        $num_start = $this->request->getParameter("num_start",pString);
+        $this->view->setVar("num_start",$num_start);
+
+        $designation = $this->request->getParameter("designation",pString);
+        $this->view->setVar("designation",$designation);
+
+
     }
 
     public function Photos()
     {
-        $vt_registre = new RegistreBiensAffectes();
-        $this->view->setVar("registre",$vt_registre);
+        $this->view->setVar("registre",$this->vt_registre);
 
         $this->view->setVar('objects_nb',$vt_registre->count());
-        $this->render('inventaire_biens_affectes/inventaire_biens_affectes_photos_html.php');
+        $this->render('inventaire_biens_affectes_photos_html.php');
     }
 
     public function Transfer()
@@ -219,7 +242,7 @@ class InventaireBiensAffectesController extends ActionController
         $this->view->setVar("registre",$vt_registre);
 
         $dompdf = new DOMPDF();
-        $this->view->setVar('PDFRenderer', $o_pdf->getCurrentRendererCode());
+        //$this->view->setVar('PDFRenderer', $o_pdf->getCurrentRendererCode());
 
         $this->view->setVar('pageWidth', "210mm");
         $this->view->setVar('pageHeight', "297mm");
@@ -228,7 +251,7 @@ class InventaireBiensAffectesController extends ActionController
         $this->view->setVar('marginBottom', '3cm');
         $this->view->setVar('marginLeft', '1cm');
 
-        $vs_content = $this->render("inventaire_biens_affectes_pdf.php");
+        $vs_content = $this->render("inventaire_biens_affectes/inventaire_biens_affectes_pdf.php");
 
         $dompdf->load_html($vs_content);
         $dompdf->render();
@@ -240,7 +263,7 @@ class InventaireBiensAffectesController extends ActionController
     # -------------------------------------------------------
     public function Info($pa_parameters)
     {
-        return $this->render('widget_inventaire_info_html.php', true);
+        //return $this->render('widget_inventaire_info_html.php', true);
     }
 
 }

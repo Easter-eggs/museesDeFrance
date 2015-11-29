@@ -34,6 +34,11 @@ require_once(__CA_BASE_DIR__.'/app/plugins/museesDeFrance/helpers/ThesaurusDMF.p
 
 require_once(__CA_BASE_DIR__.'/app/plugins/museesDeFrance/lib/migration_functionlib.php');
 
+// Inventaire db tables install lib
+require_once(__CA_APP_DIR__."/plugins/museesDeFrance/lib/inventaire/BienAffecte.php");
+require_once(__CA_APP_DIR__."/plugins/museesDeFrance/lib/inventaire/RegistreBiensAffectes.php");
+require_once(__CA_APP_DIR__."/plugins/museesDeFrance/lib/inventaire/RegistreBiensDeposes.php");
+
 /**
  * Class InstallProfileThesaurusController
  */
@@ -482,10 +487,23 @@ class InstallProfileThesaurusController extends ActionController
         if(!is_file(__CA_BASE_DIR__."/install/profiles/xml/joconde-sans-thesaurus.xml")) {
             $this->view->setVar('joconde_available', "false");
         }
-		$this->render('index_install_profile_thesaurus_html.php');
+		$this->render('install_index_html.php');
 	}
 
-	# -------------------------------------------------------
+    public function Database() {
+        $this->render('install_database_html.php');
+    }
+
+    public function DatabaseInstall() {
+        $test = new RegistreBiensDeposes();
+        if(!$test->db_installed()) {
+            $test->do_install();
+        }
+        $this->render('install_database_html.php');
+
+    }
+
+    # -------------------------------------------------------
     /**
      *
      */

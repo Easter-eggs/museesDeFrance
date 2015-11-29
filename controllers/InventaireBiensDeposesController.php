@@ -57,4 +57,14 @@ class InventaireBiensDeposesController extends ActionController
         $vo_biendepose->set("avis","mauvais");
         $vo_biendepose->save();
     }
+
+
+    # -------------------------------------------------------
+    # Sidebar info handler
+    # -------------------------------------------------------
+    public function Info($pa_parameters)
+    {
+        return $this->render('widget_inventaire_info_html.php', true);
+    }
+
 }

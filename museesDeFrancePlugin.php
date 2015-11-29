@@ -1,6 +1,5 @@
 <?php
 
-
 class museesDeFrancePlugin extends BaseApplicationPlugin
 {
 	# -------------------------------------------------------
@@ -125,9 +124,9 @@ class museesDeFrancePlugin extends BaseApplicationPlugin
 	public function hookRenderMenuBar($pa_menu_bar)
 	{
 		if ($o_req = $this->getRequest()) {
-			if (!$o_req->user->canDoAction('can_use_recolementsmf_plugin')) {
+			/*if (!$o_req->user->canDoAction('can_use_recolementsmf_plugin')) {
 				return true;
-			}
+			}*/
 
 			if (isset($pa_menu_bar['recolementsmf_menu'])) {
 				$va_menu_items = $pa_menu_bar['recolementsmf_menu']['navigation'];
@@ -192,20 +191,6 @@ class museesDeFrancePlugin extends BaseApplicationPlugin
 
 		return $pa_menu_bar;
 	}
-	# -------------------------------------------------------
-	/**
-	 * Add plugin user actions
-	 */
-	public function hookGetRoleActionList($pa_role_list)
-	{
-		$pa_role_list['plugin_recolementsmf'] = array(
-			'label' => _t('plugin Récolement SMF'),
-			'description' => _t('Actions pour le plugin Récolement SMF'),
-			'actions' => museesDeFrancePlugin::getRoleActionList()
-		);
-
-		return $pa_role_list;
-	}
 
 	public function hookRenderWidgets($pa_widgets_config)
 	{
@@ -249,6 +234,20 @@ class museesDeFrancePlugin extends BaseApplicationPlugin
 	}
 	# -------------------------------------------------------
 	/**
+	 * Add plugin user actions
+	 */
+	public function hookGetRoleActionList($pa_role_list)
+	{
+		$pa_role_list['plugin_recolementsmfPlugin'] = array(
+			'label' => _t('plugin Récolement SMF'),
+			'description' => _t('Actions pour le plugin Récolement SMF'),
+			'actions' => museesDeFrancePlugin::getRoleActionList()
+		);
+
+		return $pa_role_list;
+	}
+	# -------------------------------------------------------
+	/**
 	 * Get plugin user actions
 	 */
 	static public function getRoleActionList()
@@ -260,6 +259,7 @@ class museesDeFrancePlugin extends BaseApplicationPlugin
 			)
 		);
 	}
+
 	# -------------------------------------------------------
 }
 
