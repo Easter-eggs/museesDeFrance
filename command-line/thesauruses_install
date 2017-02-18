@@ -1,0 +1,222 @@
+#!/usr/bin/env php
+<?php
+
+if (!_caUtilsLoadSetupPHP()) {
+   die("Could not find your CollectiveAccess setup.php file! Please set the COLLECTIVEACCESS_HOME environment variable to the location of your CollectiveAccess installation, or run this command from a sub-directory of your CollectiveAccess installation.\n");
+}
+
+require_once(__CA_LIB_DIR__ . '/core/Configuration.php');
+require_once(__CA_MODELS_DIR__."/ca_storage_locations.php");
+require_once(__CA_MODELS_DIR__ . '/ca_objects.php');
+require_once(__CA_MODELS_DIR__ . '/ca_occurrences.php');
+require_once(__CA_MODELS_DIR__."/ca_entities.php");
+require_once(__CA_MODELS_DIR__."/ca_users.php");
+require_once(__CA_MODELS_DIR__."/ca_lists.php");
+require_once(__CA_MODELS_DIR__."/ca_list_items.php");
+require_once(__CA_MODELS_DIR__."/ca_locales.php");
+require_once(__CA_MODELS_DIR__."/ca_collections.php");
+require_once(__CA_LIB_DIR__.'/core/Parsers/DelimitedDataParser.php');
+
+/*
+ * Helpers
+ */
+require_once(__CA_APP_DIR__."/helpers/CLIHelpers.php");
+require_once(__CA_APP_DIR__."/helpers/utilityHelpers.php");
+require_once(__CA_BASE_DIR__.'/app/plugins/museesDeFrance/helpers/ThesaurusDMF.php');
+require_once(__CA_BASE_DIR__.'/app/plugins/museesDeFrance/lib/migration_functionlib.php');
+
+// Kint (used for debug)
+if (file_exists(__CA_BASE_DIR__."/kint/Kint.class.php")) {
+    require_once(__CA_BASE_DIR__."/kint/Kint.class.php");
+}
+
+/**
+ * Try to locate and load setup.php bootstrap file. If load fails return false and
+ * let the caller handle telling the user.
+ *
+ * @return bool True if setup.php is located and loaded, false if setup.php could not be found.
+ */
+function _caUtilsLoadSetupPHP() {
+    $vs_setup_path = 'setup.php';
+
+    // try to get hostname off of argv since we need that before anything else in a multi-database installation
+    // also detect the --setup flag, which accepts a path to an alternate setup.php
+    if (isset($_SERVER['argv']) && is_array($_SERVER['argv'])) {
+        foreach($_SERVER['argv'] as $vs_opt) {
+            if (preg_match("!^\-\-hostname\=([A-Za-z0-9_\-\.]+)!", $vs_opt, $va_matches) || preg_match("!^\-h\=([A-Za-z0-9_\-\.]+)!", $vs_opt, $va_matches)) {
+                $_SERVER['HTTP_HOST'] = $va_matches[1];
+                break;
+            }
+            if (preg_match('!^\-\-setup\=([A-Za-z0-9_\-\/\.]+)$!', $vs_opt, $va_matches)) {
+                $vs_setup_path = $va_matches[1];
+                break;
+            }
+        }
+    }
+
+    // Look for environment variable
+    $vs_path = getenv("COLLECTIVEACCESS_HOME");
+    if (file_exists("{$vs_path}/{$vs_setup_path}")) {
+        require_once("{$vs_path}/{$vs_setup_path}");
+        return true;
+    }
+
+    // Look in current directory and then in parent directories
+    $vs_cwd = getcwd();
+    $va_cwd = explode("/", $vs_cwd);
+    while(sizeof($va_cwd) > 0) {
+        $vs_setup_path_fallback = "/".join("/", $va_cwd)."/".$vs_setup_path;
+        if (file_exists($vs_setup_path_fallback)) {
+            // try to load pre-save paths
+            if(($vs_hints = @file_get_contents(join("/", $va_cwd)."/app/tmp/server_config_hints.txt")) && is_array($va_hints = unserialize($vs_hints))) {
+                $_SERVER['DOCUMENT_ROOT'] = $va_hints['DOCUMENT_ROOT'];
+                $_SERVER['SCRIPT_FILENAME'] = $va_hints['SCRIPT_FILENAME'];
+                if (!isset($_SERVER['HTTP_HOST'])) { $_SERVER['HTTP_HOST'] = $va_hints['HTTP_HOST']; }
+            } else {
+                // Guess paths based upon location of setup.php (*should* work)
+                if (!isset($_SERVER['DOCUMENT_ROOT']) || !$_SERVER['DOCUMENT_ROOT']) { $_SERVER['DOCUMENT_ROOT'] = join("/", $va_cwd); }
+                if (!isset($_SERVER['SCRIPT_FILENAME']) || !$_SERVER['SCRIPT_FILENAME']) { $_SERVER['SCRIPT_FILENAME'] = join("/", $va_cwd)."/index.php"; }
+                if (!isset($_SERVER['HTTP_HOST']) || !$_SERVER['HTTP_HOST']) { $_SERVER['HTTP_HOST'] = 'localhost'; }
+
+                print "[\033[1;33mWARNING\033[0m] Configuration is not available. Loading any CollectiveAccess screen (except for the installer) in a web browser will cache configuration details and resolve this issue.\n\n";
+                die;
+            }
+
+            require_once($vs_setup_path_fallback);
+            return true;
+        }
+        array_pop($va_cwd);
+    }
+
+    // Give up and die
+    return false;
+}
+
+
+/****************************************************************
+ * Fonction de traitement des fichiers de liste
+ ****************************************************************/
+function traiteFichierDMF($t_filename,$t_idno_prefix,$t_list_description,$nb_lignes_vides=0,$ligne_limite=0, $pourcentage=100, $pourcentage_debut=0) {
+    $thescode = str_replace("lex","",$t_idno_prefix);
+
+    global $pn_locale_id, $VERBOSE, $DEBUG;
+
+    $t_locale = new ca_locales();
+    $pn_locale_id = $t_locale->loadLocaleByCode('fr_FR');		// default locale_id
+    $t_list = new ca_lists();
+
+    $vn_list_item_type_concept = $t_list->getItemIDFromList('list_item_types', 'concept');
+    $vn_list_item_label_synonym = $t_list->getItemIDFromList('list_item_label_types', 'uf');
+    $vn_place_other= $t_list->getItemIDFromList('places_types', 'other');
+
+    $result= 0;
+    $row = 1;
+    $parent = array ();
+    $nb_tab_pre=0;
+
+    $explode_separator_array = array();
+    $explode_separator_array[1]["separator"]=" = ";
+    $explode_separator_array[1]["label_type"]=$vn_list_item_label_synonym;
+
+    $t_filename = __CA_BASE_DIR__."/app/plugins/museesDeFrance/assets/thesaurus/txt/".$t_filename;
+    if (($handle = fopen($t_filename, "r")) !== FALSE) {
+        if (!$vn_list_id=getListID($t_list,"dmf_".$t_idno_prefix,$t_list_description)) {
+            print json_encode("Impossible de trouver la liste dmf_".$t_idno_prefix." !.\n");
+            die();
+        } else {
+            // print "{ 'thesaurus' : 'Liste dmf_".$t_idno_prefix." : $vn_list_id'";
+        }
+        $contenu_fichier = file_get_contents($t_filename);
+        $total=substr_count($contenu_fichier, "\n")+1;
+        $contenu_fichier="";
+
+        $data="";
+        $parent_selected=0;
+
+        // Tableau pour conserver une trace des codes identiques et suffixer par un nombre : domn_amerique3 par exemple
+        $code_counter = array();
+        setlocale(LC_CTYPE, 'en_US');
+
+        while (($data = fgets($handle))) {
+            $libelle = str_replace("\t", "", $data);
+            $libelle = str_replace("\n", "", $libelle);
+            $libelle = str_replace("\r", "", $libelle);
+
+            $libelle = str_replace("'", "’", $libelle);
+
+            $libelles = explode(" = ",$libelle);
+            $encoded_libelle = caRemoveAccents($libelles[0]);
+            $encoded_libelle=preg_replace('/[^a-z\d]+/i', '_', $encoded_libelle);
+
+            //var_dump($encoded_libelle);die();
+            if (strlen($encoded_libelle) <= 30 ) {
+                $identifier = $thescode."_".$encoded_libelle;
+            } else {
+                $encoded_libelle = substr($encoded_libelle,0,30);
+                if (!isset($code_counter[$encoded_libelle])) {
+                    $code_counter[$encoded_libelle]=1;
+                }
+                $identifier = $thescode."_".$encoded_libelle.$code_counter[$encoded_libelle];
+                $code_counter[$encoded_libelle]++;
+            }
+
+            // comptage du nb de tabulation pour connaître le terme parent
+            $nb_tab = substr_count($data,"\t");
+            $row++;
+
+            if ($row % 5 == 0) {
+                print ".";
+                flush();
+            }
+
+            if (($row > $nb_lignes_vides + 1) && ($libelle !="")) {
+
+                if ($row == $ligne_limite) {
+                    break;
+                }
+
+                // si plus d'une tabulation
+                if (($nb_tab_pre != $nb_tab) && ($nb_tab > 0)) {
+                    $parent_selected=$parent[$nb_tab - 1];
+                } elseif ($nb_tab == 0) {
+                    $parent_selected=0;
+                }
+
+                // insertion dans la liste
+                // museesDeFrance/lib/migration_functionlib.php
+                if ($vn_item_id=getItemID($t_list,$vn_list_id,$vn_list_item_type_concept,$identifier,$libelle,"",1,0, $parent_selected, $row - $nb_lignes_vides, $explode_separator_array )) {
+                    //if ($VERBOSE) print "LIST ITEM CREATED : ".$libelle."";
+                } else {
+                    print "LIST ITEM CREATION FAILED: $libelle";
+                    die();
+                }
+                $parent[$nb_tab]=$vn_item_id;
+            }
+            $nb_tab_pre=$nb_tab;
+        }
+        fclose($handle);
+        $result = true;
+    } else {
+        print "le fichier n'a pu être ouvert.";
+        $result=false;
+    }
+    return $result;
+}
+
+print "Ce script va ajouter les valeurs manquantes dans les listes thésaurus du plugin museesDeFrance\n\n";
+
+foreach (ThesaurusDMF() as $thesaurus_params) {
+    $code = $thesaurus_params['code'];
+    echo "### $code ###\n";
+    traiteFichierDMF(
+        $thesaurus_params["filename"],
+        $thesaurus_params["code"],
+        $thesaurus_params["label"],
+        $thesaurus_params["ignoreFirstLines"]
+    );
+    echo "\n\n";
+}
+
+print "\n\n FIN\n";
+
+?>
