@@ -205,7 +205,34 @@ function traiteFichierDMF($t_filename,$t_idno_prefix,$t_list_description,$nb_lig
 
 print "Ce script va ajouter les valeurs manquantes dans les listes thésaurus du plugin museesDeFrance\n\n";
 
-foreach (ThesaurusDMF() as $thesaurus_params) {
+$thesaurus_list_file = dirname(__FILE__) . "/thesaurus_list.php";
+if (file_exists($thesaurus_list_file)) {
+    require_once($thesaurus_list_file);
+    print "=> utilisation de la liste './thesaurus_list.php'. Les thésaurus importés seront:\n";
+    assert (isset($THESAURUS_LIST) and ! empty($THESAURUS_LIST));
+    foreach ($THESAURUS_LIST as $thesaurus_name) {
+        $label = ThesaurusDMF()[$thesaurus_name]['label'];
+        print "- $thesaurus_name - $label\n";
+    }
+    $thesaurus_to_import = $THESAURUS_LIST;
+} else {
+    print "=> fichier './thesaurus_list.php' introuvable. Le script va importer la totalité des thésaurus !\n";
+    print "Pour personnaliser la liste, copier le fichier thesaurus_list.php.tpl => thesaurus_list.php et éditez le.\n";
+    $thesaurus_to_import = array_keys(ThesaurusDMF());
+}
+
+echo "\n\nContinuer ([y]/n) ? ";
+$handle = fopen ("php://stdin","r");
+$line = fgets($handle);
+if (trim($line) == 'n') {
+    echo "ABORTING!\n";
+    exit;
+}
+
+print "\n";
+foreach ($thesaurus_to_import as $thesaurus_name) {
+    assert (array_key_exists($thesaurus_name, ThesaurusDMF()));
+    $thesaurus_params = ThesaurusDMF()[$thesaurus_name];
     $code = $thesaurus_params['code'];
     echo "### $code ###\n";
     traiteFichierDMF(
