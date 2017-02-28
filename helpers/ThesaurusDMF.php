@@ -116,6 +116,7 @@ function ThesaurusDMF() {
 		"lexlieux" => array(
 			"filename"=>"lexlieux.txt",
         	"code"=>"lexlieux",
+			"label"=>"DMF : Liste des lieux géographiques de création, d'exécution et d'utilisation",
 			"ignoreFirstLines"=>"5"
 		)
 	);
